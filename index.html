@@ -390,15 +390,16 @@
     }
 
     function resetGrid() {
-        if(confirm("Voulez-vous vraiment vider toute la grille ?")) {
-            saveState();
-            board = Array(81).fill().map(() => ({
-                value: 0, centerNotes: new Set(), cornerNotes: new Set(), color: null, locked: false, userPlaced: false
-            }));
-            isLocked = false;
-            document.getElementById('lock-btn').textContent = '🔒 Cadenas';
-            document.getElementById('lock-btn').style.background = '';
-            renderBoard();
+    if(confirm("Voulez-vous vraiment vider toute la grille ?")) {
+        board = Array(81).fill().map(() => ({
+            value: 0, centerNotes: new Set(), cornerNotes: new Set(), color: null, locked: false, userPlaced: false
+        }));
+        isLocked = false;
+        history = [];     // <-- On réinitialise l'historique pour éviter le blocage
+        redoStack = [];   // <-- On vide aussi la pile de rétablissement
+        document.getElementById('lock-btn').textContent = '🔒 Cadenas';
+        document.getElementById('lock-btn').style.background = '';
+        renderBoard();
         }
     }
 
