@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -328,7 +327,7 @@ let dragSelection = false;
 
 
 // --------------------------------------------------
-// HISTORIQUE
+// HISTORIQUE CORRIGÉ
 // --------------------------------------------------
 
 function cloneBoard(source) {
@@ -341,26 +340,22 @@ function cloneBoard(source) {
     }));
 }
 
-// Enregistre l'état ACTUEL de la grille.
-// Cette fonction est appelée après chaque modification.
 function saveState() {
     const snapshot = {
         board: cloneBoard(board),
         lockMode: lockMode
     };
 
-    // Supprime les anciennes actions futures
-    // si une nouvelle action est réalisée après une annulation.
     history = history.slice(0, historyIndex + 1);
-
     history.push(snapshot);
 
     if (history.length > 200) {
         history.shift();
+    } else {
+        historyIndex++;
     }
 
     historyIndex = history.length - 1;
-
     updateHistoryButtons();
 }
 
@@ -379,7 +374,6 @@ function undo() {
     if (historyIndex <= 0) return;
 
     historyIndex--;
-
     restoreState(history[historyIndex]);
 
     statusBox.textContent = "Action annulée.";
@@ -389,18 +383,14 @@ function redo() {
     if (historyIndex >= history.length - 1) return;
 
     historyIndex++;
-
     restoreState(history[historyIndex]);
 
     statusBox.textContent = "Action rétablie.";
 }
 
 function updateHistoryButtons() {
-    document.getElementById("undoButton").disabled =
-        historyIndex <= 0;
-
-    document.getElementById("redoButton").disabled =
-        historyIndex >= history.length - 1;
+    document.getElementById("undoButton").disabled = historyIndex <= 0;
+    document.getElementById("redoButton").disabled = historyIndex >= history.length - 1;
 }
 
 
@@ -428,7 +418,6 @@ function renderBoard() {
             cell.classList.add("locked");
         }
 
-        // Affichage du chiffre
         if (cellData.value !== "") {
             const digit = document.createElement("div");
             digit.className = "digit";
@@ -440,36 +429,27 @@ function renderBoard() {
             digit.textContent = cellData.value;
             cell.appendChild(digit);
         } else {
-
-            // Notes centrales
             if (cellData.centerNotes.length > 0) {
                 const center = document.createElement("div");
                 center.className = "center-notes";
-
                 center.textContent = [...cellData.centerNotes]
                     .sort((a, b) => a - b)
                     .join(" ");
-
                 cell.appendChild(center);
             }
 
-            // Notes de coin
             if (cellData.cornerNotes.length > 0) {
                 const corner = document.createElement("div");
                 corner.className = "corner-notes";
-
                 corner.textContent = [...cellData.cornerNotes]
                     .sort((a, b) => a - b)
                     .join("");
-
                 cell.appendChild(corner);
             }
         }
 
-        // Sélection avec la souris
         cell.addEventListener("mousedown", event => {
             if (event.button !== 0) return;
-
             event.preventDefault();
 
             mouseSelecting = true;
@@ -493,11 +473,6 @@ function renderBoard() {
             selectedCells.add(index);
 
             renderBoard();
-        });
-
-        cell.addEventListener("click", event => {
-            if (event.ctrlKey || event.metaKey) return;
-            if (dragSelection) return;
         });
 
         sudoku.appendChild(cell);
@@ -527,19 +502,11 @@ function setMode(newMode) {
     mode = newMode;
 
     document.querySelectorAll(".mode-button").forEach(button => {
-        button.classList.toggle(
-            "active",
-            button.dataset.mode === mode
-        );
+        button.classList.toggle("active", button.dataset.mode === mode);
     });
 
-    // Le clavier numérique disparaît en mode couleurs.
-    document.getElementById("numberSection").style.display =
-        mode === "color" ? "none" : "block";
-
-    // La palette apparaît uniquement en mode couleurs.
-    document.getElementById("colorSection").style.display =
-        mode === "color" ? "block" : "none";
+    document.getElementById("numberSection").style.display = mode === "color" ? "none" : "block";
+    document.getElementById("colorSection").style.display = mode === "color" ? "block" : "none";
 
     statusBox.textContent = "";
 }
@@ -557,13 +524,10 @@ document.querySelectorAll(".mode-button").forEach(button => {
 
 for (let number = 1; number <= 9; number++) {
     const button = document.createElement("button");
-
     button.textContent = number;
-
     button.addEventListener("click", () => {
         handleNumber(number);
     });
-
     numberPad.appendChild(button);
 }
 
@@ -583,10 +547,12 @@ function handleNumber(number) {
         if (cell.locked) return;
 
         if (mode === "digit") {
-            cell.value = String(number);
-            cell.centerNotes = [];
-            cell.cornerNotes = [];
-            changed = true;
+            if (cell.value !== String(number)) {
+                cell.value = String(number);
+                cell.centerNotes = [];
+                cell.cornerNotes = [];
+                changed = true;
+            }
         }
 
         if (mode === "center") {
@@ -657,8 +623,10 @@ function applyColor() {
 
         if (cell.locked) return;
 
-        cell.color = selectedColor;
-        changed = true;
+        if (cell.color !== selectedColor) {
+            cell.color = selectedColor;
+            changed = true;
+        }
     });
 
     if (changed) {
@@ -680,11 +648,10 @@ function clearData() {
         return;
     }
 
-    const newBoard = cloneBoard(board);
     let changed = false;
 
     selectedCells.forEach(index => {
-        const cell = newBoard[index];
+        const cell = board[index];
 
         let hasDataInCurrentMode = false;
 
@@ -699,27 +666,28 @@ function clearData() {
         }
 
         if (hasDataInCurrentMode) {
-
-            // Supprime uniquement les données du mode actif.
             if (mode === "digit") {
-                if (!cell.locked) {
+                if (!cell.locked && cell.value !== "") {
                     cell.value = "";
                     changed = true;
                 }
             } else if (mode === "center") {
-                cell.centerNotes = [];
-                changed = true;
+                if (cell.centerNotes.length > 0) {
+                    cell.centerNotes = [];
+                    changed = true;
+                }
             } else if (mode === "corner") {
-                cell.cornerNotes = [];
-                changed = true;
+                if (cell.cornerNotes.length > 0) {
+                    cell.cornerNotes = [];
+                    changed = true;
+                }
             } else if (mode === "color") {
-                cell.color = null;
-                changed = true;
+                if (cell.color !== null) {
+                    cell.color = null;
+                    changed = true;
+                }
             }
-
         } else {
-
-            // Si le mode actif est vide, supprime les autres données.
             if (!cell.locked && cell.value !== "") {
                 cell.value = "";
                 changed = true;
@@ -743,7 +711,6 @@ function clearData() {
     });
 
     if (changed) {
-        board = newBoard;
         saveState();
         renderBoard();
     }
@@ -751,8 +718,7 @@ function clearData() {
     statusBox.textContent = "";
 }
 
-document.getElementById("trashButton")
-    .addEventListener("click", clearData);
+document.getElementById("trashButton").addEventListener("click", clearData);
 
 
 // --------------------------------------------------
@@ -761,8 +727,6 @@ document.getElementById("trashButton")
 
 function toggleLock() {
     if (!lockMode) {
-
-        // Les chiffres déjà présents deviennent verrouillés.
         board.forEach(cell => {
             if (cell.value !== "") {
                 cell.locked = true;
@@ -770,17 +734,10 @@ function toggleLock() {
         });
 
         lockMode = true;
-        statusBox.textContent =
-            "Les chiffres existants sont verrouillés.";
-
+        statusBox.textContent = "Les chiffres existants sont verrouillés.";
     } else {
-
-        // Désactive le mode de verrouillage.
-        // Les chiffres déjà verrouillés restent protégés.
         lockMode = false;
-
-        statusBox.textContent =
-            "Mode de verrouillage désactivé.";
+        statusBox.textContent = "Mode de verrouillage désactivé.";
     }
 
     saveState();
@@ -790,16 +747,11 @@ function toggleLock() {
 
 function updateLockButton() {
     const button = document.getElementById("lockButton");
-
     button.classList.toggle("active", lockMode);
-
-    button.textContent = lockMode
-        ? "🔓 Verrouillage actif"
-        : "🔒 Verrouiller";
+    button.textContent = lockMode ? "🔓 Verrouillage actif" : "🔒 Verrouiller";
 }
 
-document.getElementById("lockButton")
-    .addEventListener("click", toggleLock);
+document.getElementById("lockButton").addEventListener("click", toggleLock);
 
 
 // --------------------------------------------------
@@ -810,70 +762,53 @@ function checkBoard() {
     const values = board.map(cell => cell.value);
 
     if (values.some(value => value === "")) {
-        statusBox.textContent =
-            "La grille n'est pas encore complète.";
+        statusBox.textContent = "La grille n'est pas encore complète.";
         return;
     }
 
-    // Vérification des lignes
     for (let row = 0; row < 9; row++) {
         const line = values.slice(row * 9, row * 9 + 9);
-
         if (!isValidGroup(line)) {
-            statusBox.textContent =
-                "Erreur : un chiffre est répété sur une ligne.";
+            statusBox.textContent = "Erreur : un chiffre est répété sur une ligne.";
             return;
         }
     }
 
-    // Vérification des colonnes
     for (let col = 0; col < 9; col++) {
         const column = [];
-
         for (let row = 0; row < 9; row++) {
             column.push(values[row * 9 + col]);
         }
-
         if (!isValidGroup(column)) {
-            statusBox.textContent =
-                "Erreur : un chiffre est répété dans une colonne.";
+            statusBox.textContent = "Erreur : un chiffre est répété dans une colonne.";
             return;
         }
     }
 
-    // Vérification des blocs 3x3
     for (let blockRow = 0; blockRow < 3; blockRow++) {
         for (let blockCol = 0; blockCol < 3; blockCol++) {
             const block = [];
-
             for (let row = 0; row < 3; row++) {
                 for (let col = 0; col < 3; col++) {
-                    const index =
-                        (blockRow * 3 + row) * 9 +
-                        (blockCol * 3 + col);
-
+                    const index = (blockRow * 3 + row) * 9 + (blockCol * 3 + col);
                     block.push(values[index]);
                 }
             }
-
             if (!isValidGroup(block)) {
-                statusBox.textContent =
-                    "Erreur : un chiffre est répété dans un bloc.";
+                statusBox.textContent = "Erreur : un chiffre est répété dans un bloc.";
                 return;
             }
         }
     }
 
-    statusBox.textContent =
-        "La grille est complète et ne contient aucune répétition !";
+    statusBox.textContent = "La grille est complète et ne contient aucune répétition !";
 }
 
 function isValidGroup(group) {
     return new Set(group).size === 9;
 }
 
-document.getElementById("checkButton")
-    .addEventListener("click", checkBoard);
+document.getElementById("checkButton").addEventListener("click", checkBoard);
 
 
 // --------------------------------------------------
@@ -896,6 +831,8 @@ function resetBoard() {
     selectedCells.clear();
     lockMode = false;
 
+    history = [];
+    historyIndex = -1;
     saveState();
 
     updateLockButton();
@@ -904,8 +841,7 @@ function resetBoard() {
     statusBox.textContent = "Grille réinitialisée.";
 }
 
-document.getElementById("resetButton")
-    .addEventListener("click", resetBoard);
+document.getElementById("resetButton").addEventListener("click", resetBoard);
 
 
 // --------------------------------------------------
@@ -913,14 +849,11 @@ document.getElementById("resetButton")
 // --------------------------------------------------
 
 document.addEventListener("keydown", event => {
-
     if (event.ctrlKey || event.metaKey) {
-
         if (event.key.toLowerCase() === "z") {
             event.preventDefault();
             undo();
         }
-
         if (event.key.toLowerCase() === "y") {
             event.preventDefault();
             redo();
@@ -944,7 +877,6 @@ document.addEventListener("keydown", event => {
 saveState();
 renderBoard();
 updateLockButton();
-
 </script>
 
 </body>
