@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -12,7 +13,7 @@
 
 body {
     font-family: Arial, sans-serif;
-    background: #f0f2f5;
+    background-color: #f0f2f5;
     margin: 0;
     padding: 20px;
     display: flex;
@@ -78,10 +79,6 @@ h1 {
     z-index: 3;
 }
 
-.cell.same-number {
-    background: #edf3fa;
-}
-
 .cell.locked {
     background: #f0f0f0;
 }
@@ -99,7 +96,7 @@ h1 {
     font-weight: 600;
 }
 
-/* Notes centrales : regroupées au milieu */
+/* Notes centrales regroupées au milieu */
 .center-notes {
     position: absolute;
     font-size: clamp(9px, 2.2vw, 12px);
@@ -110,14 +107,14 @@ h1 {
     left: 50%;
     transform: translate(-50%, -50%);
     letter-spacing: 0;
-    word-spacing: 0.5px;
+    word-spacing: 1px;
     line-height: 1;
     white-space: nowrap;
     z-index: 2;
     pointer-events: none;
 }
 
-/* Notes de coin : en haut à gauche */
+/* Notes de coin en haut à gauche */
 .corner-notes {
     position: absolute;
     font-size: clamp(8px, 1.9vw, 11px);
@@ -194,7 +191,7 @@ button:disabled {
 }
 
 .color-button {
-    height: 30px;
+    height: 34px;
     padding: 0;
     border: 2px solid #aaa;
 }
@@ -255,13 +252,15 @@ button:disabled {
             </div>
         </div>
 
-        <div>
+        <!-- Clavier numérique -->
+        <div id="numberSection">
             <div class="section-title">Chiffres</div>
             <div class="number-pad" id="numberPad"></div>
         </div>
 
+        <!-- Palette de couleurs -->
         <div id="colorSection" style="display:none;">
-            <div class="section-title">Couleurs</div>
+            <div class="section-title">Choisir une couleur</div>
             <div class="color-pad" id="colorPad"></div>
         </div>
 
@@ -296,15 +295,15 @@ const colorPad = document.getElementById("colorPad");
 const statusBox = document.getElementById("status");
 
 const colors = [
-    "#f4a6a6",
-    "#f6c58b",
-    "#f5e58b",
-    "#b8dfa8",
-    "#9edbd2",
-    "#a9c9f2",
-    "#c3b1ed",
-    "#e6add5",
-    "#bfc5cc"
+    "#ff9999",
+    "#ffbf80",
+    "#ffff80",
+    "#b3e699",
+    "#80d980",
+    "#80e6c2",
+    "#80dddd",
+    "#80bfff",
+    "#c299ff"
 ];
 
 let board = Array.from({ length: 81 }, () => ({
@@ -327,6 +326,11 @@ let mouseSelecting = false;
 let dragStartCell = null;
 let dragSelection = false;
 
+
+// --------------------------------------------------
+// HISTORIQUE
+// --------------------------------------------------
+
 function cloneBoard(source) {
     return source.map(cell => ({
         value: cell.value,
@@ -337,13 +341,18 @@ function cloneBoard(source) {
     }));
 }
 
+// Enregistre l'état ACTUEL de la grille.
+// Cette fonction est appelée après chaque modification.
 function saveState() {
     const snapshot = {
         board: cloneBoard(board),
         lockMode: lockMode
     };
 
+    // Supprime les anciennes actions futures
+    // si une nouvelle action est réalisée après une annulation.
     history = history.slice(0, historyIndex + 1);
+
     history.push(snapshot);
 
     if (history.length > 200) {
@@ -351,23 +360,28 @@ function saveState() {
     }
 
     historyIndex = history.length - 1;
+
     updateHistoryButtons();
 }
 
 function restoreState(snapshot) {
     board = cloneBoard(snapshot.board);
     lockMode = snapshot.lockMode;
+
     selectedCells.clear();
+
     renderBoard();
-    updateHistoryButtons();
     updateLockButton();
+    updateHistoryButtons();
 }
 
 function undo() {
     if (historyIndex <= 0) return;
 
     historyIndex--;
+
     restoreState(history[historyIndex]);
+
     statusBox.textContent = "Action annulée.";
 }
 
@@ -375,24 +389,24 @@ function redo() {
     if (historyIndex >= history.length - 1) return;
 
     historyIndex++;
+
     restoreState(history[historyIndex]);
+
     statusBox.textContent = "Action rétablie.";
 }
 
 function updateHistoryButtons() {
-    document.getElementById("undoButton").disabled = historyIndex <= 0;
+    document.getElementById("undoButton").disabled =
+        historyIndex <= 0;
+
     document.getElementById("redoButton").disabled =
         historyIndex >= history.length - 1;
 }
 
-function updateLockButton() {
-    const button = document.getElementById("lockButton");
 
-    button.classList.toggle("active", lockMode);
-    button.textContent = lockMode
-        ? "🔓 Verrouillage actif"
-        : "🔒 Verrouiller";
-}
+// --------------------------------------------------
+// AFFICHAGE DE LA GRILLE
+// --------------------------------------------------
 
 function renderBoard() {
     sudoku.innerHTML = "";
@@ -414,6 +428,7 @@ function renderBoard() {
             cell.classList.add("locked");
         }
 
+        // Affichage du chiffre
         if (cellData.value !== "") {
             const digit = document.createElement("div");
             digit.className = "digit";
@@ -425,10 +440,12 @@ function renderBoard() {
             digit.textContent = cellData.value;
             cell.appendChild(digit);
         } else {
-            // NOTES CENTRALES
+
+            // Notes centrales
             if (cellData.centerNotes.length > 0) {
                 const center = document.createElement("div");
                 center.className = "center-notes";
+
                 center.textContent = [...cellData.centerNotes]
                     .sort((a, b) => a - b)
                     .join(" ");
@@ -436,10 +453,11 @@ function renderBoard() {
                 cell.appendChild(center);
             }
 
-            // NOTES DE COIN
+            // Notes de coin
             if (cellData.cornerNotes.length > 0) {
                 const corner = document.createElement("div");
                 corner.className = "corner-notes";
+
                 corner.textContent = [...cellData.cornerNotes]
                     .sort((a, b) => a - b)
                     .join("");
@@ -448,6 +466,7 @@ function renderBoard() {
             }
         }
 
+        // Sélection avec la souris
         cell.addEventListener("mousedown", event => {
             if (event.button !== 0) return;
 
@@ -472,6 +491,7 @@ function renderBoard() {
 
             dragSelection = true;
             selectedCells.add(index);
+
             renderBoard();
         });
 
@@ -498,6 +518,11 @@ function toggleSelection(index) {
     }
 }
 
+
+// --------------------------------------------------
+// CHANGEMENT DE MODE
+// --------------------------------------------------
+
 function setMode(newMode) {
     mode = newMode;
 
@@ -508,6 +533,11 @@ function setMode(newMode) {
         );
     });
 
+    // Le clavier numérique disparaît en mode couleurs.
+    document.getElementById("numberSection").style.display =
+        mode === "color" ? "none" : "block";
+
+    // La palette apparaît uniquement en mode couleurs.
     document.getElementById("colorSection").style.display =
         mode === "color" ? "block" : "none";
 
@@ -520,9 +550,14 @@ document.querySelectorAll(".mode-button").forEach(button => {
     });
 });
 
-// Création du clavier numérique
+
+// --------------------------------------------------
+// CLAVIER NUMÉRIQUE
+// --------------------------------------------------
+
 for (let number = 1; number <= 9; number++) {
     const button = document.createElement("button");
+
     button.textContent = number;
 
     button.addEventListener("click", () => {
@@ -532,37 +567,15 @@ for (let number = 1; number <= 9; number++) {
     numberPad.appendChild(button);
 }
 
-// Création du clavier des couleurs
-colors.forEach((color, index) => {
-    const button = document.createElement("button");
-
-    button.className = "color-button";
-    button.style.backgroundColor = color;
-
-    button.addEventListener("click", () => {
-        selectedColor = index;
-
-        document.querySelectorAll(".color-button").forEach((item, i) => {
-            item.classList.toggle("active", i === index);
-        });
-
-        applyColor();
-    });
-
-    colorPad.appendChild(button);
-});
-
 function handleNumber(number) {
     if (selectedCells.size === 0) {
         statusBox.textContent = "Sélectionne d'abord une case.";
         return;
     }
 
-    if (mode === "color") {
-        return;
-    }
+    if (mode === "color") return;
 
-    saveState();
+    let changed = false;
 
     selectedCells.forEach(index => {
         const cell = board[index];
@@ -573,18 +586,25 @@ function handleNumber(number) {
             cell.value = String(number);
             cell.centerNotes = [];
             cell.cornerNotes = [];
+            changed = true;
         }
 
         if (mode === "center") {
             toggleNote(cell.centerNotes, number);
+            changed = true;
         }
 
         if (mode === "corner") {
             toggleNote(cell.cornerNotes, number);
+            changed = true;
         }
     });
 
-    renderBoard();
+    if (changed) {
+        saveState();
+        renderBoard();
+    }
+
     statusBox.textContent = "";
 }
 
@@ -599,44 +619,72 @@ function toggleNote(notes, number) {
     }
 }
 
+
+// --------------------------------------------------
+// PALETTE DE COULEURS
+// --------------------------------------------------
+
+colors.forEach((color, index) => {
+    const button = document.createElement("button");
+
+    button.className = "color-button";
+    button.style.backgroundColor = color;
+    button.title = "Couleur " + (index + 1);
+
+    button.addEventListener("click", () => {
+        selectedColor = index;
+
+        document.querySelectorAll(".color-button").forEach((item, i) => {
+            item.classList.toggle("active", i === index);
+        });
+
+        applyColor();
+    });
+
+    colorPad.appendChild(button);
+});
+
 function applyColor() {
     if (selectedCells.size === 0) {
         statusBox.textContent = "Sélectionne d'abord une case.";
         return;
     }
 
-    saveState();
+    let changed = false;
 
     selectedCells.forEach(index => {
-        if (!board[index].locked) {
-            board[index].color = selectedColor;
-        }
+        const cell = board[index];
+
+        if (cell.locked) return;
+
+        cell.color = selectedColor;
+        changed = true;
     });
 
-    renderBoard();
+    if (changed) {
+        saveState();
+        renderBoard();
+    }
+
     statusBox.textContent = "";
 }
 
+
+// --------------------------------------------------
 // SUPPRESSION
+// --------------------------------------------------
+
 function clearData() {
     if (selectedCells.size === 0) {
         statusBox.textContent = "Sélectionne d'abord une case.";
         return;
     }
 
-    const before = JSON.stringify(board);
-    let hasChange = false;
-
-    // On détermine les modifications avant de sauvegarder
     const newBoard = cloneBoard(board);
+    let changed = false;
 
     selectedCells.forEach(index => {
         const cell = newBoard[index];
-
-        if (cell.locked) {
-            // Les chiffres verrouillés ne peuvent pas être supprimés.
-            // Les autres données de la case peuvent l'être.
-        }
 
         let hasDataInCurrentMode = false;
 
@@ -651,40 +699,69 @@ function clearData() {
         }
 
         if (hasDataInCurrentMode) {
+
+            // Supprime uniquement les données du mode actif.
             if (mode === "digit") {
-                if (!cell.locked) cell.value = "";
+                if (!cell.locked) {
+                    cell.value = "";
+                    changed = true;
+                }
             } else if (mode === "center") {
                 cell.centerNotes = [];
+                changed = true;
             } else if (mode === "corner") {
                 cell.cornerNotes = [];
+                changed = true;
             } else if (mode === "color") {
                 cell.color = null;
+                changed = true;
             }
+
         } else {
-            // Si le mode sélectionné est vide, on efface les autres données.
-            if (!cell.locked) cell.value = "";
-            cell.centerNotes = [];
-            cell.cornerNotes = [];
-            cell.color = null;
+
+            // Si le mode actif est vide, supprime les autres données.
+            if (!cell.locked && cell.value !== "") {
+                cell.value = "";
+                changed = true;
+            }
+
+            if (cell.centerNotes.length > 0) {
+                cell.centerNotes = [];
+                changed = true;
+            }
+
+            if (cell.cornerNotes.length > 0) {
+                cell.cornerNotes = [];
+                changed = true;
+            }
+
+            if (cell.color !== null) {
+                cell.color = null;
+                changed = true;
+            }
         }
     });
 
-    if (JSON.stringify(newBoard) !== before) {
-        saveState();
+    if (changed) {
         board = newBoard;
+        saveState();
         renderBoard();
     }
 
     statusBox.textContent = "";
 }
 
-document.getElementById("trashButton").addEventListener("click", clearData);
+document.getElementById("trashButton")
+    .addEventListener("click", clearData);
 
+
+// --------------------------------------------------
 // VERROUILLAGE
-function toggleLock() {
-    saveState();
+// --------------------------------------------------
 
+function toggleLock() {
     if (!lockMode) {
+
         // Les chiffres déjà présents deviennent verrouillés.
         board.forEach(cell => {
             if (cell.value !== "") {
@@ -693,28 +770,48 @@ function toggleLock() {
         });
 
         lockMode = true;
-        statusBox.textContent = "Les chiffres existants sont verrouillés.";
+        statusBox.textContent =
+            "Les chiffres existants sont verrouillés.";
+
     } else {
+
+        // Désactive le mode de verrouillage.
+        // Les chiffres déjà verrouillés restent protégés.
         lockMode = false;
-        statusBox.textContent = "Mode de verrouillage désactivé.";
+
+        statusBox.textContent =
+            "Mode de verrouillage désactivé.";
     }
 
+    saveState();
     updateLockButton();
     renderBoard();
 }
 
-document.getElementById("lockButton").addEventListener("click", toggleLock);
+function updateLockButton() {
+    const button = document.getElementById("lockButton");
 
-// ANNULER / RÉTABLIR
-document.getElementById("undoButton").addEventListener("click", undo);
-document.getElementById("redoButton").addEventListener("click", redo);
+    button.classList.toggle("active", lockMode);
 
-// VÉRIFICATION
+    button.textContent = lockMode
+        ? "🔓 Verrouillage actif"
+        : "🔒 Verrouiller";
+}
+
+document.getElementById("lockButton")
+    .addEventListener("click", toggleLock);
+
+
+// --------------------------------------------------
+// VÉRIFICATION DU SUDOKU
+// --------------------------------------------------
+
 function checkBoard() {
     const values = board.map(cell => cell.value);
 
     if (values.some(value => value === "")) {
-        statusBox.textContent = "La grille n'est pas encore complète.";
+        statusBox.textContent =
+            "La grille n'est pas encore complète.";
         return;
     }
 
@@ -723,7 +820,8 @@ function checkBoard() {
         const line = values.slice(row * 9, row * 9 + 9);
 
         if (!isValidGroup(line)) {
-            statusBox.textContent = "Erreur : un chiffre est répété sur une ligne.";
+            statusBox.textContent =
+                "Erreur : un chiffre est répété sur une ligne.";
             return;
         }
     }
@@ -737,7 +835,8 @@ function checkBoard() {
         }
 
         if (!isValidGroup(column)) {
-            statusBox.textContent = "Erreur : un chiffre est répété dans une colonne.";
+            statusBox.textContent =
+                "Erreur : un chiffre est répété dans une colonne.";
             return;
         }
     }
@@ -758,28 +857,33 @@ function checkBoard() {
             }
 
             if (!isValidGroup(block)) {
-                statusBox.textContent = "Erreur : un chiffre est répété dans un bloc.";
+                statusBox.textContent =
+                    "Erreur : un chiffre est répété dans un bloc.";
                 return;
             }
         }
     }
 
-    statusBox.textContent = "La grille est complète et ne contient aucune répétition !";
+    statusBox.textContent =
+        "La grille est complète et ne contient aucune répétition !";
 }
 
 function isValidGroup(group) {
     return new Set(group).size === 9;
 }
 
-document.getElementById("checkButton").addEventListener("click", checkBoard);
+document.getElementById("checkButton")
+    .addEventListener("click", checkBoard);
 
+
+// --------------------------------------------------
 // RÉINITIALISATION
+// --------------------------------------------------
+
 function resetBoard() {
     if (!confirm("Veux-tu vraiment réinitialiser toute la grille ?")) {
         return;
     }
-
-    saveState();
 
     board = Array.from({ length: 81 }, () => ({
         value: "",
@@ -792,17 +896,26 @@ function resetBoard() {
     selectedCells.clear();
     lockMode = false;
 
+    saveState();
+
     updateLockButton();
     renderBoard();
 
     statusBox.textContent = "Grille réinitialisée.";
 }
 
-document.getElementById("resetButton").addEventListener("click", resetBoard);
+document.getElementById("resetButton")
+    .addEventListener("click", resetBoard);
 
+
+// --------------------------------------------------
 // RACCOURCIS CLAVIER
+// --------------------------------------------------
+
 document.addEventListener("keydown", event => {
+
     if (event.ctrlKey || event.metaKey) {
+
         if (event.key.toLowerCase() === "z") {
             event.preventDefault();
             undo();
@@ -823,7 +936,11 @@ document.addEventListener("keydown", event => {
     }
 });
 
+
+// --------------------------------------------------
 // INITIALISATION
+// --------------------------------------------------
+
 saveState();
 renderBoard();
 updateLockButton();
