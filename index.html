@@ -1,433 +1,911 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Application Sudoku</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            margin: 0;
-        }
-        h1 { margin-bottom: 10px; color: #333; }
-        .game-container {
-            display: flex;
-            gap: 20px;
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        /* Grille de Sudoku plus grande (60px par cellule) */
-        .sudoku-grid {
-            display: grid;
-            grid-template-columns: repeat(9, 60px);
-            grid-template-rows: repeat(9, 60px);
-            border: 3px solid #333;
-            background-color: #333;
-            gap: 1px;
-            user-select: none;
-        }
-        .cell {
-            background-color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-            font-weight: bold;
-            cursor: pointer;
-            position: relative;
-        }
-        /* Épaississement des bordures 3x3 */
-        .cell:nth-child(3n) { border-right: 2px solid #333; }
-        .cell:nth-child(9n) { border-right: none; }
-        .sudoku-grid > div:nth-child(n+19):nth-child(-n+27),
-        .sudoku-grid > div:nth-child(n+46):nth-child(-n+54) {
-            border-bottom: 2px solid #333;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Application Sudoku</title>
 
-        /* Style de sélection : Contour bleu épais et gestion des bordures internes */
-        .cell.selected {
-            outline: 3px solid #007bff;
-            outline-offset: -3px;
-            z-index: 10;
-        }
+<style>
+* { box-sizing: border-box; }
 
-        /* Styles des chiffres et annotations */
-        .cell-value { z-index: 3; }
-        .locked { color: #000 !important; }
-        .user-placed { color: #1976d2; }
-        
-        /* Notes centrales bien collées au centre */
-        .center-notes {
-            position: absolute;
-            font-size: 11px;
-            color: #555;
-            text-align: center;
-            width: 100%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            letter-spacing: 0.5px;
-            z-index: 2;
-            pointer-events: none;
-        }
+body {
+    font-family: Arial, sans-serif;
+    background: #f0f2f5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    margin: 0;
+}
 
-        /* Notes de coin : Uniquement en haut à gauche, fixes */
-        .corner-notes {
-            position: absolute;
-            font-size: 11px;
-            color: #555;
-            top: 3px;
-            left: 4px;
-            letter-spacing: 1px;
-            z-index: 2;
-            pointer-events: none;
-        }
+h1 { margin-bottom: 20px; color: #333; }
 
-        /* Panneau de contrôle */
-        .control-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            width: 250px;
-        }
-        .section-title { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 5px; }
-        
-        .modes, .numpad {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-        }
-        button {
-            padding: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            background: #f8f9fa;
-            transition: all 0.2s;
-        }
-        button:hover { background: #e2e6ea; }
-        button.active-mode { background: #007bff; color: white; border-color: #0056b3; }
+.game-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 25px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,.1);
+}
 
-        .actions {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 5px;
-        }
-        .actions button { font-size: 14px; }
-        .full-width { grid-column: span 2; }
+.sudoku-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 60px);
+    grid-template-rows: repeat(9, 60px);
+    border: 3px solid #222;
+    background: #222;
+    gap: 1px;
+    user-select: none;
+}
 
-        /* Couleurs de surbrillance */
-        .color-btn-1 { background-color: #ffcccc !important; }
-        .color-btn-2 { background-color: #ffe5cc !important; }
-        .color-btn-3 { background-color: #ffffcc !important; }
-        .color-btn-4 { background-color: #e5ffcc !important; }
-        .color-btn-5 { background-color: #ccffcc !important; }
-        .color-btn-6 { background-color: #ccffe5 !important; }
-        .color-btn-7 { background-color: #ccffff !important; }
-        .color-btn-8 { background-color: #cce5ff !important; }
-        .color-btn-9 { background-color: #e5ccff !important; }
-    </style>
+.cell {
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: bold;
+    cursor: pointer;
+    position: relative;
+}
+
+.cell:nth-child(3n):not(:nth-child(9n)) {
+    border-right: 2px solid #222;
+}
+
+.sudoku-grid > .cell:nth-child(n+19):nth-child(-n+27),
+.sudoku-grid > .cell:nth-child(n+46):nth-child(-n+54) {
+    border-bottom: 2px solid #222;
+}
+
+.cell.selected {
+    outline: 3px solid #007bff;
+    outline-offset: -3px;
+    z-index: 10;
+}
+
+.cell-value { z-index: 3; }
+.locked { color: #000 !important; }
+.user-placed { color: #1976d2; }
+
+.center-notes {
+    position: absolute;
+    font-size: 11px;
+    color: #444;
+    text-align: center;
+    width: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    letter-spacing: 1px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.corner-notes {
+    position: absolute;
+    font-size: 11px;
+    color: #444;
+    top: 3px;
+    left: 4px;
+    letter-spacing: 1px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.control-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 250px;
+}
+
+.section-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 7px;
+}
+
+.modes, .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+}
+
+button {
+    padding: 10px 5px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #f8f9fa;
+    transition: .2s;
+}
+
+button:hover { background: #e2e6ea; }
+
+button.active-mode {
+    background: #007bff;
+    color: white;
+    border-color: #0056b3;
+}
+
+.actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+}
+
+.actions button { font-size: 13px; }
+
+.full-width { grid-column: span 2; }
+
+.color-btn-1 { background: #ff9999; }
+.color-btn-2 { background: #ffbf80; }
+.color-btn-3 { background: #ffff80; }
+.color-btn-4 { background: #b3e699; }
+.color-btn-5 { background: #80d980; }
+.color-btn-6 { background: #80e6c2; }
+.color-btn-7 { background: #80dddd; }
+.color-btn-8 { background: #80bfff; }
+.color-btn-9 { background: #c299ff; }
+
+.color-btn-1:hover,
+.color-btn-2:hover,
+.color-btn-3:hover,
+.color-btn-4:hover,
+.color-btn-5:hover,
+.color-btn-6:hover,
+.color-btn-7:hover,
+.color-btn-8:hover,
+.color-btn-9:hover {
+    filter: brightness(.9);
+}
+
+.status {
+    font-size: 13px;
+    color: #555;
+    text-align: center;
+    min-height: 18px;
+}
+
+@media (max-width: 700px) {
+    .sudoku-grid {
+        grid-template-columns: repeat(9, min(10vw, 60px));
+        grid-template-rows: repeat(9, min(10vw, 60px));
+    }
+    .cell { font-size: 20px; }
+    .game-container { padding: 10px; }
+}
+</style>
 </head>
+
 <body>
 
-    <h1>Mon Application Sudoku</h1>
-    <div class="game-container">
-        <!-- Grille 9x9 -->
-        <div class="sudoku-grid" id="grid"></div>
+<h1>Mon Sudoku</h1>
 
-        <!-- Contrôles et options -->
-        <div class="control-panel">
-            <div>
-                <div class="section-title">Modes de saisie</div>
-                <div class="modes">
-                    <button id="mode-digit" class="active-mode" onclick="setMode('digit')">Chiffre</button>
-                    <button id="mode-center" onclick="setMode('center')">Notes C.</button>
-                    <button id="mode-corner" onclick="setMode('corner')">Notes Coin</button>
-                    <button id="mode-color" onclick="setMode('color')" class="full-width">Couleurs</button>
-                </div>
-            </div>
+<div class="game-container">
 
-            <div>
-                <div class="section-title" id="numpad-title">Pavé Numérique</div>
-                <div class="numpad" id="numpad"></div>
-            </div>
+    <div class="sudoku-grid" id="grid"></div>
 
-            <div>
-                <div class="section-title">Actions</div>
-                <div class="actions">
-                    <button onclick="clearData()">🗑 Del</button>
-                    <button onclick="toggleLock()" id="lock-btn">🔒 Lock</button>
-                    <button onclick="undo()">Annuler</button>
-                    <button onclick="redo()">Rétablir</button>
-                    <button onclick="resetGrid()">Reset</button>
-                    <button onclick="checkGrid()" style="background-color: #28a745; color: white;">Check</button>
-                </div>
+    <div class="control-panel">
+
+        <div>
+            <div class="section-title">Modes de saisie</div>
+            <div class="modes">
+                <button id="mode-digit" class="active-mode"
+                    onclick="setMode('digit')">Chiffre</button>
+
+                <button id="mode-center"
+                    onclick="setMode('center')">Notes C.</button>
+
+                <button id="mode-corner"
+                    onclick="setMode('corner')">Notes Coin</button>
+
+                <button id="mode-color" class="full-width"
+                    onclick="setMode('color')">Couleurs</button>
             </div>
         </div>
+
+        <div>
+            <div class="section-title" id="numpad-title">
+                Pavé Numérique
+            </div>
+            <div class="numpad" id="numpad"></div>
+        </div>
+
+        <div>
+            <div class="section-title">Actions</div>
+            <div class="actions">
+
+                <button onclick="clearData()">🗑 Del</button>
+
+                <button onclick="toggleLock()" id="lock-btn">
+                    🔒 Lock
+                </button>
+
+                <button onclick="undo()">↶ Annuler</button>
+
+                <button onclick="redo()">↷ Rétablir</button>
+
+                <button onclick="resetGrid()">Reset</button>
+
+                <button onclick="checkGrid()"
+                    style="background:#28a745;color:white">
+                    Check
+                </button>
+            </div>
+        </div>
+
+        <div class="status" id="status">
+            Sélectionnez une ou plusieurs cases.
+        </div>
+
     </div>
+</div>
 
 <script>
-    const GRID_SIZE = 9;
-    let selectedCells = new Set(); // Gestion de la sélection multiple
-    let isMouseDown = false;
-    let currentMode = 'digit'; 
-    let isLocked = false;
-    
-    let board = Array(81).fill().map(() => ({
+
+const GRID_SIZE = 9;
+
+let selectedCells = new Set();
+let isMouseDown = false;
+let currentMode = 'digit';
+let isLocked = false;
+
+let board = createEmptyBoard();
+
+let history = [];
+let redoStack = [];
+
+const gridEl = document.getElementById('grid');
+const numpadEl = document.getElementById('numpad');
+
+const COLORS = [
+    '#ff9999',
+    '#ffbf80',
+    '#ffff80',
+    '#b3e699',
+    '#80d980',
+    '#80e6c2',
+    '#80dddd',
+    '#80bfff',
+    '#c299ff'
+];
+
+function createEmptyBoard() {
+    return Array.from({length:81}, () => ({
         value: 0,
-        centerNotes: new Set(),
-        cornerNotes: new Set(),
+        centerNotes: [],
+        cornerNotes: [],
         color: null,
         locked: false,
         userPlaced: false
     }));
+}
 
-    let history = [];
-    let redoStack = [];
+// Sauvegarde complète des données.
+// Les annotations sont stockées sous forme de tableaux,
+// ce qui permet de les restaurer correctement.
 
-    function saveState() {
-        history.push(JSON.stringify(board));
-        redoStack = [];
+function saveState() {
+    history.push(JSON.stringify({
+        board: board,
+        isLocked: isLocked
+    }));
+
+    if (history.length > 200) {
+        history.shift();
     }
 
-    const gridEl = document.getElementById('grid');
-    const numpadEl = document.getElementById('numpad');
+    redoStack = [];
+}
 
-    function initGrid() {
-        gridEl.innerHTML = '';
-        for (let i = 0; i < 81; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.dataset.index = i;
-            
-            // Gestion de la sélection multiple (Souris + Glisser + Ctrl)
-            cell.addEventListener('mousedown', (e) => {
-                isMouseDown = true;
-                handleCellSelection(i, e);
-            });
-            cell.addEventListener('mouseenter', (e) => {
-                if (isMouseDown) {
-                    handleCellSelection(i, e, true);
-                }
-            });
+function restoreState(state) {
+    const data = JSON.parse(state);
 
-            gridEl.appendChild(cell);
-        }
-        
-        window.addEventListener('mouseup', () => {
-            isMouseDown = false;
+    board = data.board.map(cell => ({
+        ...cell,
+        centerNotes: [...cell.centerNotes],
+        cornerNotes: [...cell.cornerNotes]
+    }));
+
+    isLocked = data.isLocked;
+    updateLockButton();
+    renderBoard();
+}
+
+// Initialisation de la grille
+
+function initGrid() {
+
+    gridEl.innerHTML = '';
+
+    for (let i = 0; i < 81; i++) {
+
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.index = i;
+
+        cell.addEventListener('mousedown', e => {
+            if (e.button !== 0) return;
+
+            isMouseDown = true;
+            handleCellSelection(i, e);
         });
 
-        renderBoard();
-        renderNumpad();
+        cell.addEventListener('mouseenter', e => {
+            if (isMouseDown) {
+                handleCellSelection(i, e, true);
+            }
+        });
+
+        gridEl.appendChild(cell);
     }
 
-    function handleCellSelection(index, e, isDragging = false) {
-        if (!e.ctrlKey && !e.metaKey && !isDragging) {
-            selectedCells.clear();
-        }
+    window.addEventListener('mouseup', () => {
+        isMouseDown = false;
+    });
+
+    renderBoard();
+    renderNumpad();
+}
+
+function handleCellSelection(index, e, isDragging = false) {
+
+    if (!e.ctrlKey && !e.metaKey && !isDragging) {
+        selectedCells.clear();
         selectedCells.add(index);
-        updateSelectionUI();
-    }
-
-    function updateSelectionUI() {
-        document.querySelectorAll('.cell').forEach(c => {
-            const idx = parseInt(c.dataset.index);
-            if (selectedCells.has(idx)) {
-                c.classList.add('selected');
-            } else {
-                c.classList.remove('selected');
-            }
-        });
-    }
-
-    function setMode(mode) {
-        currentMode = mode;
-        document.querySelectorAll('.modes button').forEach(b => b.classList.remove('active-mode'));
-        if(mode !== 'color') {
-            document.getElementById(`mode-${mode}`).classList.add('active-mode');
+    } else if (!isDragging) {
+        // Ctrl/Cmd + clic permet aussi de désélectionner.
+        if (selectedCells.has(index)) {
+            selectedCells.delete(index);
         } else {
-            document.getElementById('mode-color').classList.add('active-mode');
+            selectedCells.add(index);
         }
-        renderNumpad();
+    } else {
+        selectedCells.add(index);
     }
 
-    function renderNumpad() {
-        numpadEl.innerHTML = '';
-        const titleEl = document.getElementById('numpad-title');
-        
+    updateSelectionUI();
+}
+
+function updateSelectionUI() {
+
+    document.querySelectorAll('.cell').forEach(cell => {
+
+        const index = Number(cell.dataset.index);
+
+        cell.classList.toggle(
+            'selected',
+            selectedCells.has(index)
+        );
+    });
+}
+
+// Modes
+
+function setMode(mode) {
+
+    currentMode = mode;
+
+    document.querySelectorAll('.modes button').forEach(btn => {
+        btn.classList.remove('active-mode');
+    });
+
+    document.getElementById(`mode-${mode}`)
+        .classList.add('active-mode');
+
+    renderNumpad();
+}
+
+function renderNumpad() {
+
+    numpadEl.innerHTML = '';
+
+    const title = document.getElementById('numpad-title');
+
+    title.textContent = currentMode === 'color'
+        ? 'Palette de Couleurs'
+        : 'Pavé Numérique';
+
+    for (let i = 1; i <= 9; i++) {
+
+        const btn = document.createElement('button');
+
+        btn.textContent = i;
+
         if (currentMode === 'color') {
-            titleEl.textContent = 'Palette de Couleurs';
-            for (let i = 1; i <= 9; i++) {
-                const btn = document.createElement('button');
-                btn.className = `color-btn-${i}`;
-                btn.textContent = i;
-                btn.onclick = () => handleNumpadInput(i);
-                numpadEl.appendChild(btn);
-            }
-        } else {
-            titleEl.textContent = 'Pavé Numérique';
-            for (let i = 1; i <= 9; i++) {
-                const btn = document.createElement('button');
-                btn.textContent = i;
-                btn.onclick = () => handleNumpadInput(i);
-                numpadEl.appendChild(btn);
-            }
+            btn.style.backgroundColor = COLORS[i - 1];
         }
+
+        btn.onclick = () => handleNumpadInput(i);
+
+        numpadEl.appendChild(btn);
+    }
+}
+
+// Saisie des chiffres, notes et couleurs
+
+function handleNumpadInput(num) {
+
+    if (selectedCells.size === 0) {
+        return;
     }
 
-    function handleNumpadInput(num) {
-        if (selectedCells.size === 0) return;
-        saveState();
+    const hasChange = [...selectedCells].some(index => {
 
-        selectedCells.forEach(index => {
-            let cellData = board[index];
+        const cell = board[index];
+
+        if (currentMode === 'digit') {
+            return !cell.locked &&
+                (cell.value !== num ||
+                cell.centerNotes.length > 0 ||
+                cell.cornerNotes.length > 0);
+        }
+
+        if (currentMode === 'center' || currentMode === 'corner') {
+            return cell.value === 0;
+        }
+
+        if (currentMode === 'color') {
+            return cell.color !== COLORS[num - 1];
+        }
+
+        return false;
+    });
+
+    if (!hasChange) return;
+
+    saveState();
+
+    selectedCells.forEach(index => {
+
+        const cell = board[index];
+
+        if (currentMode === 'digit') {
+
+            if (!cell.locked) {
+
+                cell.value = num;
+
+                // Un chiffre supprime les deux types de notes.
+                cell.centerNotes = [];
+                cell.cornerNotes = [];
+
+                cell.userPlaced = isLocked;
+            }
+
+        } else if (currentMode === 'center') {
+
+            if (cell.value === 0) {
+
+                toggleNote(cell.centerNotes, num);
+            }
+
+        } else if (currentMode === 'corner') {
+
+            if (cell.value === 0) {
+
+                toggleNote(cell.cornerNotes, num);
+            }
+
+        } else if (currentMode === 'color') {
+
+            const selectedColor = COLORS[num - 1];
+
+            cell.color = cell.color === selectedColor
+                ? null
+                : selectedColor;
+        }
+
+    });
+
+    renderBoard();
+    setStatus('Modification effectuée.');
+}
+
+function toggleNote(notes, num) {
+
+    if (notes.includes(num)) {
+        return notes.filter(n => n !== num);
+    }
+
+    notes.push(num);
+
+    return notes.sort((a,b) => a-b);
+}
+
+// Suppression
+
+function clearData() {
+
+    if (selectedCells.size === 0) return;
+
+    let changed = false;
+
+    selectedCells.forEach(index => {
+
+        const cell = board[index];
+
+        let hasSelectedData = false;
+
+        if (currentMode === 'digit') {
+            hasSelectedData = cell.value !== 0;
+        }
+
+        if (currentMode === 'center') {
+            hasSelectedData = cell.centerNotes.length > 0;
+        }
+
+        if (currentMode === 'corner') {
+            hasSelectedData = cell.cornerNotes.length > 0;
+        }
+
+        if (currentMode === 'color') {
+            hasSelectedData = cell.color !== null;
+        }
+
+        // Si le mode sélectionné contient des données,
+        // on supprime uniquement ces données.
+
+        if (hasSelectedData) {
 
             if (currentMode === 'digit') {
-                if (!cellData.locked) {
-                    cellData.value = num;
-                    cellData.centerNotes.clear();
-                    cellData.cornerNotes.clear();
-                    cellData.userPlaced = isLocked;
+
+                if (!cell.locked) {
+                    cell.value = 0;
+                    cell.userPlaced = false;
+                    changed = true;
                 }
+
             } else if (currentMode === 'center') {
-                if (cellData.value === 0) {
-                    if (cellData.centerNotes.has(num)) cellData.centerNotes.delete(num);
-                    else cellData.centerNotes.add(num);
-                }
+
+                cell.centerNotes = [];
+                changed = true;
+
             } else if (currentMode === 'corner') {
-                if (cellData.value === 0) {
-                    if (cellData.cornerNotes.has(num)) cellData.cornerNotes.delete(num);
-                    else cellData.cornerNotes.add(num);
-                }
+
+                cell.cornerNotes = [];
+                changed = true;
+
             } else if (currentMode === 'color') {
-                const colors = ['#ffcccc', '#ffe5cc', '#ffffcc', '#e5ffcc', '#ccffcc', '#ccffe5', '#ccffff', '#cce5ff', '#e5ccff'];
-                cellData.color = cellData.color === colors[num-1] ? null : colors[num-1];
+
+                cell.color = null;
+                changed = true;
             }
-        });
-        renderBoard();
-    }
 
-    function clearData() {
-        if (selectedCells.size === 0) return;
-        saveState();
-
-        selectedCells.forEach(index => {
-            let cellData = board[index];
-
-            if (currentMode === 'digit' && cellData.value !== 0) {
-                if (!cellData.locked) cellData.value = 0;
-            } else if (currentMode === 'center' && cellData.centerNotes.size > 0) {
-                cellData.centerNotes.clear();
-            } else if (currentMode === 'corner' && cellData.cornerNotes.size > 0) {
-                cellData.cornerNotes.clear();
-            } else if (currentMode === 'color' && cellData.color !== null) {
-                cellData.color = null;
-            } else {
-                if (!cellData.locked) {
-                    cellData.value = 0;
-                    cellData.centerNotes.clear();
-                    cellData.cornerNotes.clear();
-                    cellData.color = null;
-                }
-            }
-        });
-        renderBoard();
-    }
-
-    function toggleLock() {
-        isLocked = !isLocked;
-        const btn = document.getElementById('lock-btn');
-        if (isLocked) {
-            btn.textContent = '🔓 Unlock';
-            btn.style.background = '#ffc107';
-            board.forEach(cell => {
-                if (cell.value !== 0) cell.locked = true;
-            });
         } else {
-            btn.textContent = '🔒 Lock';
-            btn.style.background = '';
+
+            // Sinon, on vide toutes les données de la case.
+            // Les chiffres verrouillés restent protégés.
+
+            if (!cell.locked) {
+
+                if (
+                    cell.value !== 0 ||
+                    cell.centerNotes.length ||
+                    cell.cornerNotes.length ||
+                    cell.color !== null
+                ) {
+                    changed = true;
+                }
+
+                cell.value = 0;
+                cell.userPlaced = false;
+                cell.centerNotes = [];
+                cell.cornerNotes = [];
+                cell.color = null;
+
+            } else {
+
+                // Les annotations et la couleur restent supprimables
+                // même lorsque le chiffre est verrouillé.
+
+                if (
+                    cell.centerNotes.length ||
+                    cell.cornerNotes.length ||
+                    cell.color !== null
+                ) {
+                    changed = true;
+                }
+
+                cell.centerNotes = [];
+                cell.cornerNotes = [];
+                cell.color = null;
+            }
         }
+
+    });
+
+    if (changed) {
+        saveState();
         renderBoard();
+        setStatus('Suppression effectuée.');
+    }
+}
+
+// Verrouillage
+
+function toggleLock() {
+
+    saveState();
+
+    if (!isLocked) {
+
+        isLocked = true;
+
+        board.forEach(cell => {
+
+            if (cell.value !== 0) {
+                cell.locked = true;
+                cell.userPlaced = false;
+            }
+        });
+
+        setStatus('Chiffres verrouillés. Les nouveaux chiffres seront bleus.');
+
+    } else {
+
+        isLocked = false;
+
+        board.forEach(cell => {
+
+            cell.locked = false;
+            cell.userPlaced = false;
+
+        });
+
+        setStatus('Tous les chiffres sont déverrouillés.');
     }
 
-    function renderBoard() {
-        const cells = gridEl.children;
-        for (let i = 0; i < 81; i++) {
-            const cellData = board[i];
-            const cellEl = cells[i];
-            cellEl.innerHTML = '';
-            cellEl.style.backgroundColor = cellData.color || 'white';
+    updateLockButton();
+    renderBoard();
+}
 
-            if (cellData.value !== 0) {
-                const valSpan = document.createElement('span');
-                valSpan.className = 'cell-value';
-                if (cellData.locked) valSpan.classList.add('locked');
-                else if (cellData.userPlaced) valSpan.classList.add('user-placed');
-                else valSpan.classList.add('locked');
-                valSpan.textContent = cellData.value;
-                cellEl.appendChild(valSpan);
+function updateLockButton() {
+
+    const btn = document.getElementById('lock-btn');
+
+    if (isLocked) {
+
+        btn.textContent = '🔓 Unlock';
+        btn.style.background = '#ffc107';
+
+    } else {
+
+        btn.textContent = '🔒 Lock';
+        btn.style.background = '';
+    }
+}
+
+// Affichage de la grille
+
+function renderBoard() {
+
+    for (let i = 0; i < 81; i++) {
+
+        const cellData = board[i];
+        const cellEl = gridEl.children[i];
+
+        cellEl.innerHTML = '';
+
+        cellEl.style.backgroundColor =
+            cellData.color || 'white';
+
+        if (cellData.value !== 0) {
+
+            const value = document.createElement('span');
+
+            value.className = 'cell-value';
+
+            if (cellData.locked) {
+                value.classList.add('locked');
+            } else if (cellData.userPlaced) {
+                value.classList.add('user-placed');
             } else {
-                if (cellData.centerNotes.size > 0) {
-                    const centerDiv = document.createElement('div');
-                    centerDiv.className = 'center-notes';
-                    centerDiv.textContent = Array.from(cellData.centerNotes).sort().join(' ');
-                    cellEl.appendChild(centerDiv);
+                value.classList.add('locked');
+            }
+
+            value.textContent = cellData.value;
+
+            cellEl.appendChild(value);
+
+        } else {
+
+            // Les notes centrales et de coin peuvent cohabiter.
+
+            if (cellData.centerNotes.length > 0) {
+
+                const center = document.createElement('div');
+
+                center.className = 'center-notes';
+
+                center.textContent =
+                    [...cellData.centerNotes].sort((a,b) => a-b).join(' ');
+
+                cellEl.appendChild(center);
+            }
+
+            if (cellData.cornerNotes.length > 0) {
+
+                const corner = document.createElement('div');
+
+                corner.className = 'corner-notes';
+
+                corner.textContent =
+                    [...cellData.cornerNotes].sort((a,b) => a-b).join('');
+
+                cellEl.appendChild(corner);
+            }
+        }
+    }
+
+    updateSelectionUI();
+}
+
+// Undo / Redo
+
+function undo() {
+
+    if (history.length === 0) return;
+
+    redoStack.push(JSON.stringify({
+        board: board,
+        isLocked: isLocked
+    }));
+
+    restoreState(history.pop());
+
+    setStatus('Action annulée.');
+}
+
+function redo() {
+
+    if (redoStack.length === 0) return;
+
+    history.push(JSON.stringify({
+        board: board,
+        isLocked: isLocked
+    }));
+
+    restoreState(redoStack.pop());
+
+    setStatus('Action rétablie.');
+}
+
+// Reset complet
+
+function resetGrid() {
+
+    if (!confirm('Voulez-vous vraiment vider toute la grille ?')) {
+        return;
+    }
+
+    board = createEmptyBoard();
+
+    isLocked = false;
+
+    history = [];
+    redoStack = [];
+
+    selectedCells.clear();
+
+    updateLockButton();
+
+    renderBoard();
+
+    setStatus('Grille réinitialisée.');
+}
+
+// Vérification du Sudoku
+
+function findConflict(values) {
+
+    // Vérification des lignes et colonnes.
+
+    for (let i = 0; i < 9; i++) {
+
+        const row = new Set();
+        const col = new Set();
+
+        for (let j = 0; j < 9; j++) {
+
+            const r = values[i * 9 + j];
+            const c = values[j * 9 + i];
+
+            if (r !== 0) {
+                if (row.has(r)) {
+                    return true;
                 }
-                if (cellData.cornerNotes.size > 0) {
-                    const cornerDiv = document.createElement('div');
-                    cornerDiv.className = 'corner-notes';
-                    cornerDiv.textContent = Array.from(cellData.cornerNotes).sort().join('');
-                    cellEl.appendChild(cornerDiv);
+                row.add(r);
+            }
+
+            if (c !== 0) {
+                if (col.has(c)) {
+                    return true;
+                }
+                col.add(c);
+            }
+        }
+    }
+
+    // Vérification des blocs 3x3.
+
+    for (let boxRow = 0; boxRow < 3; boxRow++) {
+
+        for (let boxCol = 0; boxCol < 3; boxCol++) {
+
+            const numbers = new Set();
+
+            for (let r = 0; r < 3; r++) {
+
+                for (let c = 0; c < 3; c++) {
+
+                    const index =
+                        (boxRow * 3 + r) * 9 +
+                        (boxCol * 3 + c);
+
+                    const value = values[index];
+
+                    if (value !== 0) {
+
+                        if (numbers.has(value)) {
+                            return true;
+                        }
+
+                        numbers.add(value);
+                    }
                 }
             }
         }
-        updateSelectionUI();
     }
 
-    function undo() {
-        if (history.length === 0) return;
-        redoStack.push(JSON.stringify(board));
-        board = JSON.parse(history.pop());
-        renderBoard();
+    return false;
+}
+
+function checkGrid() {
+
+    const values = board.map(cell => cell.value);
+
+    if (findConflict(values)) {
+
+        alert('❌ Erreur : certains chiffres sont en double dans une ligne, colonne ou bloc 3x3.');
+
+        setStatus('La grille contient des erreurs.');
+
+        return;
     }
 
-    function redo() {
-        if (redoStack.length === 0) return;
-        history.push(JSON.stringify(board));
-        board = JSON.parse(redoStack.pop());
-        renderBoard();
+    if (values.includes(0)) {
+
+        alert('✓ Aucun doublon détecté. La grille est correcte jusqu ici, mais elle est incomplète.');
+
+        setStatus('Grille valide mais incomplète.');
+
+        return;
     }
 
-    function resetGrid() {
-        if(confirm("Voulez-vous vraiment vider toute la grille ?")) {
-            board = Array(81).fill().map(() => ({
-                value: 0, centerNotes: new Set(), cornerNotes: new Set(), color: null, locked: false, userPlaced: false
-            }));
-            isLocked = false;
-            history = [];
-            redoStack = [];
-            selectedCells.clear();
-            document.getElementById('lock-btn').textContent = '🔒 Lock';
-            document.getElementById('lock-btn').style.background = '';
-            renderBoard();
-        }
-    }
+    alert('🎉 Félicitations ! La solution du Sudoku est correcte.');
 
-    function checkGrid() {
-        alert("Vérification basique effectuée.");
-    }
+    setStatus('Sudoku résolu correctement !');
+}
 
-    initGrid();
+function setStatus(message) {
+
+    document.getElementById('status').textContent = message;
+}
+
+// Lancement
+
+initGrid();
+
 </script>
 </body>
 </html>
