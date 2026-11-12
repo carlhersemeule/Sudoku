@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -7,181 +6,231 @@
 <title>Mon Application Sudoku</title>
 
 <style>
-* { box-sizing: border-box; }
+* {
+    box-sizing: border-box;
+}
 
 body {
     font-family: Arial, sans-serif;
     background: #f0f2f5;
+    margin: 0;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 20px;
-    margin: 0;
+    color: #222;
 }
 
-h1 { margin-bottom: 20px; color: #333; }
+h1 {
+    margin: 5px 0 20px;
+    font-size: 28px;
+}
 
-.game-container {
+.app {
+    width: 100%;
+    max-width: 650px;
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 25px;
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,.1);
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
 }
 
-.sudoku-grid {
+#sudoku {
+    width: min(92vw, 540px);
+    aspect-ratio: 1;
     display: grid;
-    grid-template-columns: repeat(9, 60px);
-    grid-template-rows: repeat(9, 60px);
+    grid-template-columns: repeat(9, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+    background: white;
     border: 3px solid #222;
-    background: #222;
-    gap: 1px;
     user-select: none;
 }
 
 .cell {
-    background: white;
+    position: relative;
+    border: 1px solid #c5cbd2;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
-    font-weight: bold;
+    background: white;
     cursor: pointer;
-    position: relative;
+    min-width: 0;
+    min-height: 0;
 }
 
-.cell:nth-child(3n):not(:nth-child(9n)) {
+.cell:nth-child(3n) {
     border-right: 2px solid #222;
 }
 
-.sudoku-grid > .cell:nth-child(n+19):nth-child(-n+27),
-.sudoku-grid > .cell:nth-child(n+46):nth-child(-n+54) {
+.cell:nth-child(9n) {
+    border-right: none;
+}
+
+.cell:nth-child(n+19):nth-child(-n+27),
+.cell:nth-child(n+46):nth-child(-n+54) {
     border-bottom: 2px solid #222;
 }
 
 .cell.selected {
-    outline: 3px solid #007bff;
-    outline-offset: -3px;
-    z-index: 10;
+    background: #dcecff !important;
+    outline: 2px solid #4389d6;
+    outline-offset: -2px;
+    z-index: 3;
 }
 
-.cell-value { z-index: 3; }
-.locked { color: #000 !important; }
-.user-placed { color: #1976d2; }
+.cell.same-number {
+    background: #edf3fa;
+}
 
+.cell.locked {
+    background: #f0f0f0;
+}
+
+.digit {
+    font-size: clamp(20px, 5vw, 30px);
+    font-weight: 500;
+    color: #1875c9;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.digit.locked-digit {
+    color: #111;
+    font-weight: 600;
+}
+
+/* Notes centrales : regroupées au milieu */
 .center-notes {
     position: absolute;
-    font-size: 11px;
+    font-size: clamp(9px, 2.2vw, 12px);
     color: #444;
     text-align: center;
     width: 100%;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    letter-spacing: 1px;
+    letter-spacing: 0;
+    word-spacing: 1px;
+    line-height: 1;
+    white-space: nowrap;
     z-index: 2;
     pointer-events: none;
 }
 
+/* Notes de coin : en haut à gauche */
 .corner-notes {
     position: absolute;
-    font-size: 11px;
+    font-size: clamp(8px, 1.9vw, 11px);
     color: #444;
     top: 3px;
     left: 4px;
     letter-spacing: 1px;
+    line-height: 1.1;
     z-index: 2;
     pointer-events: none;
 }
 
-.control-panel {
+.controls {
+    width: min(92vw, 540px);
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    width: 250px;
+    gap: 12px;
 }
 
-.section-title {
-    font-size: 14px;
-    font-weight: bold;
-    color: #555;
-    margin-bottom: 7px;
-}
-
-.modes, .numpad {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
+.button-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 7px;
 }
 
 button {
-    padding: 10px 5px;
-    font-size: 15px;
-    font-weight: bold;
-    cursor: pointer;
-    border: 1px solid #ccc;
+    border: 1px solid #c5cbd2;
     border-radius: 6px;
-    background: #f8f9fa;
-    transition: .2s;
+    background: white;
+    padding: 9px 13px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
 }
 
-button:hover { background: #e2e6ea; }
+button:hover {
+    background: #e9edf2;
+}
 
-button.active-mode {
-    background: #007bff;
+button.active {
+    background: #246fbd;
+    border-color: #246fbd;
     color: white;
-    border-color: #0056b3;
 }
 
-.actions {
+button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.section-title {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.number-pad {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(9, 1fr);
     gap: 5px;
 }
 
-.actions button { font-size: 13px; }
+.number-pad button {
+    padding: 12px 0;
+    font-size: 19px;
+    font-weight: bold;
+}
 
-.full-width { grid-column: span 2; }
+.color-pad {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 6px;
+}
 
-.color-btn-1 { background: #ff9999; }
-.color-btn-2 { background: #ffbf80; }
-.color-btn-3 { background: #ffff80; }
-.color-btn-4 { background: #b3e699; }
-.color-btn-5 { background: #80d980; }
-.color-btn-6 { background: #80e6c2; }
-.color-btn-7 { background: #80dddd; }
-.color-btn-8 { background: #80bfff; }
-.color-btn-9 { background: #c299ff; }
+.color-button {
+    height: 30px;
+    padding: 0;
+    border: 2px solid #aaa;
+}
 
-.color-btn-1:hover,
-.color-btn-2:hover,
-.color-btn-3:hover,
-.color-btn-4:hover,
-.color-btn-5:hover,
-.color-btn-6:hover,
-.color-btn-7:hover,
-.color-btn-8:hover,
-.color-btn-9:hover {
-    filter: brightness(.9);
+.color-button.active {
+    border: 3px solid #222;
+    outline: 2px solid white;
 }
 
 .status {
-    font-size: 13px;
-    color: #555;
+    min-height: 22px;
     text-align: center;
-    min-height: 18px;
+    font-size: 14px;
+    color: #444;
 }
 
-@media (max-width: 700px) {
-    .sudoku-grid {
-        grid-template-columns: repeat(9, min(10vw, 60px));
-        grid-template-rows: repeat(9, min(10vw, 60px));
+.help {
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+    line-height: 1.5;
+}
+
+@media (max-width: 450px) {
+    body {
+        padding: 10px 5px;
     }
-    .cell { font-size: 20px; }
-    .game-container { padding: 10px; }
+
+    button {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+
+    .number-pad button {
+        font-size: 16px;
+    }
 }
 </style>
 </head>
@@ -190,722 +239,596 @@ button.active-mode {
 
 <h1>Mon Sudoku</h1>
 
-<div class="game-container">
+<div class="app">
 
-    <div class="sudoku-grid" id="grid"></div>
+    <div id="sudoku"></div>
 
-    <div class="control-panel">
+    <div class="controls">
 
         <div>
-            <div class="section-title">Modes de saisie</div>
-            <div class="modes">
-                <button id="mode-digit" class="active-mode"
-                    onclick="setMode('digit')">Chiffre</button>
-
-                <button id="mode-center"
-                    onclick="setMode('center')">Notes C.</button>
-
-                <button id="mode-corner"
-                    onclick="setMode('corner')">Notes Coin</button>
-
-                <button id="mode-color" class="full-width"
-                    onclick="setMode('color')">Couleurs</button>
+            <div class="section-title">Mode de saisie</div>
+            <div class="button-row">
+                <button class="mode-button active" data-mode="digit">Chiffres</button>
+                <button class="mode-button" data-mode="center">Notes centrales</button>
+                <button class="mode-button" data-mode="corner">Notes coin</button>
+                <button class="mode-button" data-mode="color">Couleurs</button>
             </div>
         </div>
 
         <div>
-            <div class="section-title" id="numpad-title">
-                Pavé Numérique
-            </div>
-            <div class="numpad" id="numpad"></div>
+            <div class="section-title">Chiffres</div>
+            <div class="number-pad" id="numberPad"></div>
         </div>
 
-        <div>
-            <div class="section-title">Actions</div>
-            <div class="actions">
-
-                <button onclick="clearData()">🗑 Del</button>
-
-                <button onclick="toggleLock()" id="lock-btn">
-                    🔒 Lock
-                </button>
-
-                <button onclick="undo()">↶ Annuler</button>
-
-                <button onclick="redo()">↷ Rétablir</button>
-
-                <button onclick="resetGrid()">Reset</button>
-
-                <button onclick="checkGrid()"
-                    style="background:#28a745;color:white">
-                    Check
-                </button>
-            </div>
+        <div id="colorSection" style="display:none;">
+            <div class="section-title">Couleurs</div>
+            <div class="color-pad" id="colorPad"></div>
         </div>
 
-        <div class="status" id="status">
-            Sélectionnez une ou plusieurs cases.
+        <div class="button-row">
+            <button id="trashButton">🗑 Supprimer</button>
+            <button id="lockButton">🔒 Verrouiller</button>
+            <button id="undoButton" disabled>↶ Annuler</button>
+            <button id="redoButton" disabled>↷ Rétablir</button>
+        </div>
+
+        <div class="button-row">
+            <button id="checkButton">Vérifier</button>
+            <button id="resetButton">Réinitialiser</button>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <div class="help">
+            Sélection multiple : maintiens Ctrl ou Cmd et clique sur plusieurs cases.
+            Tu peux également sélectionner plusieurs cases en faisant glisser la souris.
+            <br>
+            Raccourcis : Ctrl + Z pour annuler, Ctrl + Y pour rétablir.
         </div>
 
     </div>
 </div>
 
 <script>
+const sudoku = document.getElementById("sudoku");
+const numberPad = document.getElementById("numberPad");
+const colorPad = document.getElementById("colorPad");
+const statusBox = document.getElementById("status");
 
-const GRID_SIZE = 9;
-
-let selectedCells = new Set();
-let isMouseDown = false;
-let currentMode = 'digit';
-let isLocked = false;
-
-let board = createEmptyBoard();
-
-let history = [];
-let redoStack = [];
-
-const gridEl = document.getElementById('grid');
-const numpadEl = document.getElementById('numpad');
-
-const COLORS = [
-    '#ff9999',
-    '#ffbf80',
-    '#ffff80',
-    '#b3e699',
-    '#80d980',
-    '#80e6c2',
-    '#80dddd',
-    '#80bfff',
-    '#c299ff'
+const colors = [
+    "#f4a6a6",
+    "#f6c58b",
+    "#f5e58b",
+    "#b8dfa8",
+    "#9edbd2",
+    "#a9c9f2",
+    "#c3b1ed",
+    "#e6add5",
+    "#bfc5cc"
 ];
 
-function createEmptyBoard() {
-    return Array.from({length:81}, () => ({
-        value: 0,
-        centerNotes: [],
-        cornerNotes: [],
-        color: null,
-        locked: false,
-        userPlaced: false
+let board = Array.from({ length: 81 }, () => ({
+    value: "",
+    locked: false,
+    centerNotes: [],
+    cornerNotes: [],
+    color: null
+}));
+
+let selectedCells = new Set();
+let mode = "digit";
+let selectedColor = 0;
+let lockMode = false;
+
+let history = [];
+let historyIndex = -1;
+
+let mouseSelecting = false;
+let dragStartCell = null;
+let dragSelection = false;
+
+function cloneBoard(source) {
+    return source.map(cell => ({
+        value: cell.value,
+        locked: cell.locked,
+        centerNotes: [...cell.centerNotes],
+        cornerNotes: [...cell.cornerNotes],
+        color: cell.color
     }));
 }
 
-// Sauvegarde complète des données.
-// Les annotations sont stockées sous forme de tableaux,
-// ce qui permet de les restaurer correctement.
-
 function saveState() {
-    history.push(JSON.stringify({
-        board: board,
-        isLocked: isLocked
-    }));
+    const snapshot = {
+        board: cloneBoard(board),
+        lockMode: lockMode
+    };
+
+    history = history.slice(0, historyIndex + 1);
+    history.push(snapshot);
 
     if (history.length > 200) {
         history.shift();
     }
 
-    redoStack = [];
+    historyIndex = history.length - 1;
+    updateHistoryButtons();
 }
 
-function restoreState(state) {
-    const data = JSON.parse(state);
-
-    board = data.board.map(cell => ({
-        ...cell,
-        centerNotes: [...cell.centerNotes],
-        cornerNotes: [...cell.cornerNotes]
-    }));
-
-    isLocked = data.isLocked;
+function restoreState(snapshot) {
+    board = cloneBoard(snapshot.board);
+    lockMode = snapshot.lockMode;
+    selectedCells.clear();
+    renderBoard();
+    updateHistoryButtons();
     updateLockButton();
-    renderBoard();
 }
-
-// Initialisation de la grille
-
-function initGrid() {
-
-    gridEl.innerHTML = '';
-
-    for (let i = 0; i < 81; i++) {
-
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.dataset.index = i;
-
-        cell.addEventListener('mousedown', e => {
-            if (e.button !== 0) return;
-
-            isMouseDown = true;
-            handleCellSelection(i, e);
-        });
-
-        cell.addEventListener('mouseenter', e => {
-            if (isMouseDown) {
-                handleCellSelection(i, e, true);
-            }
-        });
-
-        gridEl.appendChild(cell);
-    }
-
-    window.addEventListener('mouseup', () => {
-        isMouseDown = false;
-    });
-
-    renderBoard();
-    renderNumpad();
-}
-
-function handleCellSelection(index, e, isDragging = false) {
-
-    if (!e.ctrlKey && !e.metaKey && !isDragging) {
-        selectedCells.clear();
-        selectedCells.add(index);
-    } else if (!isDragging) {
-        // Ctrl/Cmd + clic permet aussi de désélectionner.
-        if (selectedCells.has(index)) {
-            selectedCells.delete(index);
-        } else {
-            selectedCells.add(index);
-        }
-    } else {
-        selectedCells.add(index);
-    }
-
-    updateSelectionUI();
-}
-
-function updateSelectionUI() {
-
-    document.querySelectorAll('.cell').forEach(cell => {
-
-        const index = Number(cell.dataset.index);
-
-        cell.classList.toggle(
-            'selected',
-            selectedCells.has(index)
-        );
-    });
-}
-
-// Modes
-
-function setMode(mode) {
-
-    currentMode = mode;
-
-    document.querySelectorAll('.modes button').forEach(btn => {
-        btn.classList.remove('active-mode');
-    });
-
-    document.getElementById(`mode-${mode}`)
-        .classList.add('active-mode');
-
-    renderNumpad();
-}
-
-function renderNumpad() {
-
-    numpadEl.innerHTML = '';
-
-    const title = document.getElementById('numpad-title');
-
-    title.textContent = currentMode === 'color'
-        ? 'Palette de Couleurs'
-        : 'Pavé Numérique';
-
-    for (let i = 1; i <= 9; i++) {
-
-        const btn = document.createElement('button');
-
-        btn.textContent = i;
-
-        if (currentMode === 'color') {
-            btn.style.backgroundColor = COLORS[i - 1];
-        }
-
-        btn.onclick = () => handleNumpadInput(i);
-
-        numpadEl.appendChild(btn);
-    }
-}
-
-// Saisie des chiffres, notes et couleurs
-
-function handleNumpadInput(num) {
-
-    if (selectedCells.size === 0) {
-        return;
-    }
-
-    const hasChange = [...selectedCells].some(index => {
-
-        const cell = board[index];
-
-        if (currentMode === 'digit') {
-            return !cell.locked &&
-                (cell.value !== num ||
-                cell.centerNotes.length > 0 ||
-                cell.cornerNotes.length > 0);
-        }
-
-        if (currentMode === 'center' || currentMode === 'corner') {
-            return cell.value === 0;
-        }
-
-        if (currentMode === 'color') {
-            return cell.color !== COLORS[num - 1];
-        }
-
-        return false;
-    });
-
-    if (!hasChange) return;
-
-    saveState();
-
-    selectedCells.forEach(index => {
-
-        const cell = board[index];
-
-        if (currentMode === 'digit') {
-
-            if (!cell.locked) {
-
-                cell.value = num;
-
-                // Un chiffre supprime les deux types de notes.
-                cell.centerNotes = [];
-                cell.cornerNotes = [];
-
-                cell.userPlaced = isLocked;
-            }
-
-        } else if (currentMode === 'center') {
-
-            if (cell.value === 0) {
-
-                toggleNote(cell.centerNotes, num);
-            }
-
-        } else if (currentMode === 'corner') {
-
-            if (cell.value === 0) {
-
-                toggleNote(cell.cornerNotes, num);
-            }
-
-        } else if (currentMode === 'color') {
-
-            const selectedColor = COLORS[num - 1];
-
-            cell.color = cell.color === selectedColor
-                ? null
-                : selectedColor;
-        }
-
-    });
-
-    renderBoard();
-    setStatus('Modification effectuée.');
-}
-
-function toggleNote(notes, num) {
-
-    if (notes.includes(num)) {
-        return notes.filter(n => n !== num);
-    }
-
-    notes.push(num);
-
-    return notes.sort((a,b) => a-b);
-}
-
-// Suppression
-
-function clearData() {
-
-    if (selectedCells.size === 0) return;
-
-    let changed = false;
-
-    selectedCells.forEach(index => {
-
-        const cell = board[index];
-
-        let hasSelectedData = false;
-
-        if (currentMode === 'digit') {
-            hasSelectedData = cell.value !== 0;
-        }
-
-        if (currentMode === 'center') {
-            hasSelectedData = cell.centerNotes.length > 0;
-        }
-
-        if (currentMode === 'corner') {
-            hasSelectedData = cell.cornerNotes.length > 0;
-        }
-
-        if (currentMode === 'color') {
-            hasSelectedData = cell.color !== null;
-        }
-
-        // Si le mode sélectionné contient des données,
-        // on supprime uniquement ces données.
-
-        if (hasSelectedData) {
-
-            if (currentMode === 'digit') {
-
-                if (!cell.locked) {
-                    cell.value = 0;
-                    cell.userPlaced = false;
-                    changed = true;
-                }
-
-            } else if (currentMode === 'center') {
-
-                cell.centerNotes = [];
-                changed = true;
-
-            } else if (currentMode === 'corner') {
-
-                cell.cornerNotes = [];
-                changed = true;
-
-            } else if (currentMode === 'color') {
-
-                cell.color = null;
-                changed = true;
-            }
-
-        } else {
-
-            // Sinon, on vide toutes les données de la case.
-            // Les chiffres verrouillés restent protégés.
-
-            if (!cell.locked) {
-
-                if (
-                    cell.value !== 0 ||
-                    cell.centerNotes.length ||
-                    cell.cornerNotes.length ||
-                    cell.color !== null
-                ) {
-                    changed = true;
-                }
-
-                cell.value = 0;
-                cell.userPlaced = false;
-                cell.centerNotes = [];
-                cell.cornerNotes = [];
-                cell.color = null;
-
-            } else {
-
-                // Les annotations et la couleur restent supprimables
-                // même lorsque le chiffre est verrouillé.
-
-                if (
-                    cell.centerNotes.length ||
-                    cell.cornerNotes.length ||
-                    cell.color !== null
-                ) {
-                    changed = true;
-                }
-
-                cell.centerNotes = [];
-                cell.cornerNotes = [];
-                cell.color = null;
-            }
-        }
-
-    });
-
-    if (changed) {
-        saveState();
-        renderBoard();
-        setStatus('Suppression effectuée.');
-    }
-}
-
-// Verrouillage
-
-function toggleLock() {
-
-    saveState();
-
-    if (!isLocked) {
-
-        isLocked = true;
-
-        board.forEach(cell => {
-
-            if (cell.value !== 0) {
-                cell.locked = true;
-                cell.userPlaced = false;
-            }
-        });
-
-        setStatus('Chiffres verrouillés. Les nouveaux chiffres seront bleus.');
-
-    } else {
-
-        isLocked = false;
-
-        board.forEach(cell => {
-
-            cell.locked = false;
-            cell.userPlaced = false;
-
-        });
-
-        setStatus('Tous les chiffres sont déverrouillés.');
-    }
-
-    updateLockButton();
-    renderBoard();
-}
-
-function updateLockButton() {
-
-    const btn = document.getElementById('lock-btn');
-
-    if (isLocked) {
-
-        btn.textContent = '🔓 Unlock';
-        btn.style.background = '#ffc107';
-
-    } else {
-
-        btn.textContent = '🔒 Lock';
-        btn.style.background = '';
-    }
-}
-
-// Affichage de la grille
-
-function renderBoard() {
-
-    for (let i = 0; i < 81; i++) {
-
-        const cellData = board[i];
-        const cellEl = gridEl.children[i];
-
-        cellEl.innerHTML = '';
-
-        cellEl.style.backgroundColor =
-            cellData.color || 'white';
-
-        if (cellData.value !== 0) {
-
-            const value = document.createElement('span');
-
-            value.className = 'cell-value';
-
-            if (cellData.locked) {
-                value.classList.add('locked');
-            } else if (cellData.userPlaced) {
-                value.classList.add('user-placed');
-            } else {
-                value.classList.add('locked');
-            }
-
-            value.textContent = cellData.value;
-
-            cellEl.appendChild(value);
-
-        } else {
-
-            // Les notes centrales et de coin peuvent cohabiter.
-
-            if (cellData.centerNotes.length > 0) {
-
-                const center = document.createElement('div');
-
-                center.className = 'center-notes';
-
-                center.textContent =
-                    [...cellData.centerNotes].sort((a,b) => a-b).join(' ');
-
-                cellEl.appendChild(center);
-            }
-
-            if (cellData.cornerNotes.length > 0) {
-
-                const corner = document.createElement('div');
-
-                corner.className = 'corner-notes';
-
-                corner.textContent =
-                    [...cellData.cornerNotes].sort((a,b) => a-b).join('');
-
-                cellEl.appendChild(corner);
-            }
-        }
-    }
-
-    updateSelectionUI();
-}
-
-// Undo / Redo
 
 function undo() {
+    if (historyIndex <= 0) return;
 
-    if (history.length === 0) return;
-
-    redoStack.push(JSON.stringify({
-        board: board,
-        isLocked: isLocked
-    }));
-
-    restoreState(history.pop());
-
-    setStatus('Action annulée.');
+    historyIndex--;
+    restoreState(history[historyIndex]);
+    statusBox.textContent = "Action annulée.";
 }
 
 function redo() {
+    if (historyIndex >= history.length - 1) return;
 
-    if (redoStack.length === 0) return;
-
-    history.push(JSON.stringify({
-        board: board,
-        isLocked: isLocked
-    }));
-
-    restoreState(redoStack.pop());
-
-    setStatus('Action rétablie.');
+    historyIndex++;
+    restoreState(history[historyIndex]);
+    statusBox.textContent = "Action rétablie.";
 }
 
-// Reset complet
+function updateHistoryButtons() {
+    document.getElementById("undoButton").disabled = historyIndex <= 0;
+    document.getElementById("redoButton").disabled =
+        historyIndex >= history.length - 1;
+}
 
-function resetGrid() {
+function updateLockButton() {
+    const button = document.getElementById("lockButton");
 
-    if (!confirm('Voulez-vous vraiment vider toute la grille ?')) {
+    button.classList.toggle("active", lockMode);
+    button.textContent = lockMode
+        ? "🔓 Verrouillage actif"
+        : "🔒 Verrouiller";
+}
+
+function renderBoard() {
+    sudoku.innerHTML = "";
+
+    board.forEach((cellData, index) => {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.dataset.index = index;
+
+        if (cellData.color !== null) {
+            cell.style.backgroundColor = colors[cellData.color];
+        }
+
+        if (selectedCells.has(index)) {
+            cell.classList.add("selected");
+        }
+
+        if (cellData.locked) {
+            cell.classList.add("locked");
+        }
+
+        if (cellData.value !== "") {
+            const digit = document.createElement("div");
+            digit.className = "digit";
+
+            if (cellData.locked) {
+                digit.classList.add("locked-digit");
+            }
+
+            digit.textContent = cellData.value;
+            cell.appendChild(digit);
+        } else {
+            // NOTES CENTRALES
+            if (cellData.centerNotes.length > 0) {
+                const center = document.createElement("div");
+                center.className = "center-notes";
+                center.textContent = [...cellData.centerNotes]
+                    .sort((a, b) => a - b)
+                    .join(" ");
+
+                cell.appendChild(center);
+            }
+
+            // NOTES DE COIN
+            if (cellData.cornerNotes.length > 0) {
+                const corner = document.createElement("div");
+                corner.className = "corner-notes";
+                corner.textContent = [...cellData.cornerNotes]
+                    .sort((a, b) => a - b)
+                    .join("");
+
+                cell.appendChild(corner);
+            }
+        }
+
+        cell.addEventListener("mousedown", event => {
+            if (event.button !== 0) return;
+
+            event.preventDefault();
+
+            mouseSelecting = true;
+            dragStartCell = index;
+            dragSelection = false;
+
+            if (event.ctrlKey || event.metaKey) {
+                toggleSelection(index);
+            } else {
+                selectedCells.clear();
+                selectedCells.add(index);
+            }
+
+            renderBoard();
+        });
+
+        cell.addEventListener("mouseenter", () => {
+            if (!mouseSelecting || dragStartCell === null) return;
+
+            dragSelection = true;
+            selectedCells.add(index);
+            renderBoard();
+        });
+
+        cell.addEventListener("click", event => {
+            if (event.ctrlKey || event.metaKey) return;
+            if (dragSelection) return;
+        });
+
+        sudoku.appendChild(cell);
+    });
+}
+
+document.addEventListener("mouseup", () => {
+    mouseSelecting = false;
+    dragStartCell = null;
+    dragSelection = false;
+});
+
+function toggleSelection(index) {
+    if (selectedCells.has(index)) {
+        selectedCells.delete(index);
+    } else {
+        selectedCells.add(index);
+    }
+}
+
+function setMode(newMode) {
+    mode = newMode;
+
+    document.querySelectorAll(".mode-button").forEach(button => {
+        button.classList.toggle(
+            "active",
+            button.dataset.mode === mode
+        );
+    });
+
+    document.getElementById("colorSection").style.display =
+        mode === "color" ? "block" : "none";
+
+    statusBox.textContent = "";
+}
+
+document.querySelectorAll(".mode-button").forEach(button => {
+    button.addEventListener("click", () => {
+        setMode(button.dataset.mode);
+    });
+});
+
+// Création du clavier numérique
+for (let number = 1; number <= 9; number++) {
+    const button = document.createElement("button");
+    button.textContent = number;
+
+    button.addEventListener("click", () => {
+        handleNumber(number);
+    });
+
+    numberPad.appendChild(button);
+}
+
+// Création du clavier des couleurs
+colors.forEach((color, index) => {
+    const button = document.createElement("button");
+
+    button.className = "color-button";
+    button.style.backgroundColor = color;
+
+    button.addEventListener("click", () => {
+        selectedColor = index;
+
+        document.querySelectorAll(".color-button").forEach((item, i) => {
+            item.classList.toggle("active", i === index);
+        });
+
+        applyColor();
+    });
+
+    colorPad.appendChild(button);
+});
+
+function handleNumber(number) {
+    if (selectedCells.size === 0) {
+        statusBox.textContent = "Sélectionne d'abord une case.";
         return;
     }
 
-    board = createEmptyBoard();
+    if (mode === "color") {
+        return;
+    }
 
-    isLocked = false;
+    saveState();
 
-    history = [];
-    redoStack = [];
+    selectedCells.forEach(index => {
+        const cell = board[index];
 
-    selectedCells.clear();
+        if (cell.locked) return;
 
-    updateLockButton();
+        if (mode === "digit") {
+            cell.value = String(number);
+            cell.centerNotes = [];
+            cell.cornerNotes = [];
+        }
+
+        if (mode === "center") {
+            toggleNote(cell.centerNotes, number);
+        }
+
+        if (mode === "corner") {
+            toggleNote(cell.cornerNotes, number);
+        }
+    });
 
     renderBoard();
-
-    setStatus('Grille réinitialisée.');
+    statusBox.textContent = "";
 }
 
-// Vérification du Sudoku
+function toggleNote(notes, number) {
+    const position = notes.indexOf(number);
 
-function findConflict(values) {
-
-    // Vérification des lignes et colonnes.
-
-    for (let i = 0; i < 9; i++) {
-
-        const row = new Set();
-        const col = new Set();
-
-        for (let j = 0; j < 9; j++) {
-
-            const r = values[i * 9 + j];
-            const c = values[j * 9 + i];
-
-            if (r !== 0) {
-                if (row.has(r)) {
-                    return true;
-                }
-                row.add(r);
-            }
-
-            if (c !== 0) {
-                if (col.has(c)) {
-                    return true;
-                }
-                col.add(c);
-            }
-        }
+    if (position !== -1) {
+        notes.splice(position, 1);
+    } else {
+        notes.push(number);
+        notes.sort((a, b) => a - b);
     }
-
-    // Vérification des blocs 3x3.
-
-    for (let boxRow = 0; boxRow < 3; boxRow++) {
-
-        for (let boxCol = 0; boxCol < 3; boxCol++) {
-
-            const numbers = new Set();
-
-            for (let r = 0; r < 3; r++) {
-
-                for (let c = 0; c < 3; c++) {
-
-                    const index =
-                        (boxRow * 3 + r) * 9 +
-                        (boxCol * 3 + c);
-
-                    const value = values[index];
-
-                    if (value !== 0) {
-
-                        if (numbers.has(value)) {
-                            return true;
-                        }
-
-                        numbers.add(value);
-                    }
-                }
-            }
-        }
-    }
-
-    return false;
 }
 
-function checkGrid() {
+function applyColor() {
+    if (selectedCells.size === 0) {
+        statusBox.textContent = "Sélectionne d'abord une case.";
+        return;
+    }
 
+    saveState();
+
+    selectedCells.forEach(index => {
+        if (!board[index].locked) {
+            board[index].color = selectedColor;
+        }
+    });
+
+    renderBoard();
+    statusBox.textContent = "";
+}
+
+// SUPPRESSION
+function clearData() {
+    if (selectedCells.size === 0) {
+        statusBox.textContent = "Sélectionne d'abord une case.";
+        return;
+    }
+
+    const before = JSON.stringify(board);
+    let hasChange = false;
+
+    // On détermine les modifications avant de sauvegarder
+    const newBoard = cloneBoard(board);
+
+    selectedCells.forEach(index => {
+        const cell = newBoard[index];
+
+        if (cell.locked) {
+            // Les chiffres verrouillés ne peuvent pas être supprimés.
+            // Les autres données de la case peuvent l'être.
+        }
+
+        let hasDataInCurrentMode = false;
+
+        if (mode === "digit") {
+            hasDataInCurrentMode = cell.value !== "";
+        } else if (mode === "center") {
+            hasDataInCurrentMode = cell.centerNotes.length > 0;
+        } else if (mode === "corner") {
+            hasDataInCurrentMode = cell.cornerNotes.length > 0;
+        } else if (mode === "color") {
+            hasDataInCurrentMode = cell.color !== null;
+        }
+
+        if (hasDataInCurrentMode) {
+            if (mode === "digit") {
+                if (!cell.locked) cell.value = "";
+            } else if (mode === "center") {
+                cell.centerNotes = [];
+            } else if (mode === "corner") {
+                cell.cornerNotes = [];
+            } else if (mode === "color") {
+                cell.color = null;
+            }
+        } else {
+            // Si le mode sélectionné est vide, on efface les autres données.
+            if (!cell.locked) cell.value = "";
+            cell.centerNotes = [];
+            cell.cornerNotes = [];
+            cell.color = null;
+        }
+    });
+
+    if (JSON.stringify(newBoard) !== before) {
+        saveState();
+        board = newBoard;
+        renderBoard();
+    }
+
+    statusBox.textContent = "";
+}
+
+document.getElementById("trashButton").addEventListener("click", clearData);
+
+// VERROUILLAGE
+function toggleLock() {
+    saveState();
+
+    if (!lockMode) {
+        // Les chiffres déjà présents deviennent verrouillés.
+        board.forEach(cell => {
+            if (cell.value !== "") {
+                cell.locked = true;
+            }
+        });
+
+        lockMode = true;
+        statusBox.textContent = "Les chiffres existants sont verrouillés.";
+    } else {
+        lockMode = false;
+        statusBox.textContent = "Mode de verrouillage désactivé.";
+    }
+
+    updateLockButton();
+    renderBoard();
+}
+
+document.getElementById("lockButton").addEventListener("click", toggleLock);
+
+// ANNULER / RÉTABLIR
+document.getElementById("undoButton").addEventListener("click", undo);
+document.getElementById("redoButton").addEventListener("click", redo);
+
+// VÉRIFICATION
+function checkBoard() {
     const values = board.map(cell => cell.value);
 
-    if (findConflict(values)) {
-
-        alert('❌ Erreur : certains chiffres sont en double dans une ligne, colonne ou bloc 3x3.');
-
-        setStatus('La grille contient des erreurs.');
-
+    if (values.some(value => value === "")) {
+        statusBox.textContent = "La grille n'est pas encore complète.";
         return;
     }
 
-    if (values.includes(0)) {
+    // Vérification des lignes
+    for (let row = 0; row < 9; row++) {
+        const line = values.slice(row * 9, row * 9 + 9);
 
-        alert('✓ Aucun doublon détecté. La grille est correcte jusqu ici, mais elle est incomplète.');
+        if (!isValidGroup(line)) {
+            statusBox.textContent = "Erreur : un chiffre est répété sur une ligne.";
+            return;
+        }
+    }
 
-        setStatus('Grille valide mais incomplète.');
+    // Vérification des colonnes
+    for (let col = 0; col < 9; col++) {
+        const column = [];
 
+        for (let row = 0; row < 9; row++) {
+            column.push(values[row * 9 + col]);
+        }
+
+        if (!isValidGroup(column)) {
+            statusBox.textContent = "Erreur : un chiffre est répété dans une colonne.";
+            return;
+        }
+    }
+
+    // Vérification des blocs 3x3
+    for (let blockRow = 0; blockRow < 3; blockRow++) {
+        for (let blockCol = 0; blockCol < 3; blockCol++) {
+            const block = [];
+
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    const index =
+                        (blockRow * 3 + row) * 9 +
+                        (blockCol * 3 + col);
+
+                    block.push(values[index]);
+                }
+            }
+
+            if (!isValidGroup(block)) {
+                statusBox.textContent = "Erreur : un chiffre est répété dans un bloc.";
+                return;
+            }
+        }
+    }
+
+    statusBox.textContent = "La grille est complète et ne contient aucune répétition !";
+}
+
+function isValidGroup(group) {
+    return new Set(group).size === 9;
+}
+
+document.getElementById("checkButton").addEventListener("click", checkBoard);
+
+// RÉINITIALISATION
+function resetBoard() {
+    if (!confirm("Veux-tu vraiment réinitialiser toute la grille ?")) {
         return;
     }
 
-    alert('🎉 Félicitations ! La solution du Sudoku est correcte.');
+    saveState();
 
-    setStatus('Sudoku résolu correctement !');
+    board = Array.from({ length: 81 }, () => ({
+        value: "",
+        locked: false,
+        centerNotes: [],
+        cornerNotes: [],
+        color: null
+    }));
+
+    selectedCells.clear();
+    lockMode = false;
+
+    updateLockButton();
+    renderBoard();
+
+    statusBox.textContent = "Grille réinitialisée.";
 }
 
-function setStatus(message) {
+document.getElementById("resetButton").addEventListener("click", resetBoard);
 
-    document.getElementById('status').textContent = message;
-}
+// RACCOURCIS CLAVIER
+document.addEventListener("keydown", event => {
+    if (event.ctrlKey || event.metaKey) {
+        if (event.key.toLowerCase() === "z") {
+            event.preventDefault();
+            undo();
+        }
 
-// Lancement
+        if (event.key.toLowerCase() === "y") {
+            event.preventDefault();
+            redo();
+        }
+    }
 
-initGrid();
+    if (event.key >= "1" && event.key <= "9") {
+        handleNumber(Number(event.key));
+    }
+
+    if (event.key === "Delete" || event.key === "Backspace") {
+        clearData();
+    }
+});
+
+// INITIALISATION
+saveState();
+renderBoard();
+updateLockButton();
 
 </script>
+
 </body>
 </html>
